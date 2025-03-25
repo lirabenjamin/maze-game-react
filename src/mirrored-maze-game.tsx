@@ -19,6 +19,7 @@ const MirroredMazeGame = () => {
     { x: 200, y: 350 },
     { x: 380, y: 380 }
   ]);
+  const [showStartFlash, setShowStartFlash] = useState(false);
   const gameAreaRef = useRef(null);
   const pathRef = useRef(null);
   const jitterAmount = 3; // Adjust this value to control jitter intensity
@@ -120,6 +121,8 @@ const MirroredMazeGame = () => {
       if (distanceToStart <= config.pathWidth) {
         setIsGameStarted(true);
         setMousePosition({ x: jitteredX, y: jitteredY });
+        setShowStartFlash(true);
+        setTimeout(() => setShowStartFlash(false), 500);
       }
       return;
     }
@@ -158,63 +161,23 @@ const MirroredMazeGame = () => {
     setIsMirrored(!isMirrored);
   };
 
-  // Create path SVG
-  const createPath = () => {
-    // Create path string
-    const pathString = pathPoints.map((point, index) => 
-      index === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`
-    ).join(' ');
-
-    return (
-      <svg 
-        ref={pathRef} 
-        width={config.width} 
-        height={config.height} 
-        style={{ border: '2px solid black', backgroundColor: '#f0f0f0' }}
-      >
-        {/* Path */}
-        <path 
-          d={pathString} 
-          stroke="gray" 
-          strokeWidth={config.pathWidth} 
-          fill="none" 
-        />
-
-        {/* Start point */}
-        <circle 
-          cx={config.startX} 
-          cy={config.startY} 
-          r={15} 
-          fill="green" 
-        />
-
-        {/* End point */}
-        <circle 
-          cx={config.endX} 
-          cy={config.endY} 
-          r={15} 
-          fill="red" 
-        />
-      </svg>
-    );
-  };
-
-  // Player cursor
   const renderCursor = () => {
-    if (!isGameStarted) return (
-      <div
-        style={{
-          position: 'absolute',
-          left: mousePosition.x - 10,
-          top: mousePosition.y - 10,
-          width: 20,
-          height: 20,
-          borderRadius: '50%',
-          backgroundColor: 'blue',
-          pointerEvents: 'none'
-        }}
-      />
-    );
+    if (!isGameStarted) {
+      return (
+        <div
+          style={{
+            position: 'absolute',
+            left: mousePosition.x - 10,
+            top: mousePosition.y - 10,
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            backgroundColor: 'blue',
+            pointerEvents: 'none'
+          }}
+        />
+      );
+    }
 
     const distanceToEnd = calculateDistance(mousePosition.x, mousePosition.y, config.endX, config.endY);
     if (distanceToEnd <= 10) return null;
@@ -237,11 +200,6 @@ const MirroredMazeGame = () => {
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
-      {!isGameStarted && (
-        <div className="mb-4 text-lg text-blue-700 font-semibold">
-          Move your mouse to the red dot to begin.
-        </div>
-      )}
       <h1 className="text-2xl font-bold mb-4">Mirrored Maze Game</h1>
       
       <div 
@@ -254,7 +212,56 @@ const MirroredMazeGame = () => {
           cursor: isGameStarted ? 'none' : 'default'
         }}
       >
-        {createPath()}
+        <div style={{ position: 'relative' }}>
+          <svg 
+            ref={pathRef} 
+            width={config.width} 
+            height={config.height} 
+            style={{ border: '2px solid black', backgroundColor: '#f0f0f0' }}
+          >
+            {/* Path */}
+            <path 
+              d={pathPoints.map((point, index) =>
+                index === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`
+              ).join(' ')} 
+              stroke="gray" 
+              strokeWidth={config.pathWidth} 
+              fill="none" 
+            />
+            <circle cx={config.startX} cy={config.startY} r={15} fill="green" />
+            <circle cx={config.endX} cy={config.endY} r={15} fill="red" />
+            <foreignObject x="0" y="0" width="400" height="400">
+              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: '100%', height: '100%', position: 'relative' }}>
+                {!isGameStarted && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    color: '#1e40af'
+                  }}>
+                    Move your mouse to the red dot to begin.
+                  </div>
+                )}
+                {showStartFlash && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    color: '#16a34a'
+                  }}>
+                    Start!
+                  </div>
+                )}
+              </div>
+            </foreignObject>
+          </svg>
+        </div>
         {renderCursor()}
       </div>
 
