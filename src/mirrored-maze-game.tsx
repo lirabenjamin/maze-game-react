@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { CheckCircle2, RefreshCw } from 'lucide-react';
 
 const MirroredMazeGame = () => {
@@ -87,11 +87,11 @@ const MirroredMazeGame = () => {
   }, [isGameStarted, isGameCompleted, isGameOver]);
 
   // Handle mouse move
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (isGameOver) return;
     if (!gameAreaRef.current) return;
 
-    const rect = gameAreaRef.current.getBoundingClientRect();
+    const rect = (gameAreaRef.current as HTMLDivElement).getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
