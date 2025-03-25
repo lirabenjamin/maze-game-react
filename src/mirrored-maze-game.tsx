@@ -35,7 +35,7 @@ const MirroredMazeGame = () => {
   };
 
   // Calculate distance between two points
-  const calculateDistance = (x1, y1, x2, y2) => {
+  const calculateDistance = (x1: number, y1: number, x2: number, y2: number): number => {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
   };
 
@@ -50,20 +50,19 @@ const MirroredMazeGame = () => {
   };
 
   // Check if point is close enough to the path
-  const isPointOnPath = (x, y) => {
+  const isPointOnPath = (x: number, y: number): boolean => {
     if (!pathRef.current) return false;
-    
-    const svg = pathRef.current;
+  
+    const svg = pathRef.current as SVGSVGElement;
     const path = svg.querySelector('path');
-    
-    // Create SVG point
+    if (!path) return false;
+  
     const svgPoint = svg.createSVGPoint();
     svgPoint.x = x;
     svgPoint.y = y;
-
+  
     try {
-      // Check if point is on the path stroke
-      return path.isPointInStroke(svgPoint);
+      return (path as any).isPointInStroke(svgPoint); // might not be typed
     } catch (error) {
       console.error('Path intersection check failed', error);
       return true;
