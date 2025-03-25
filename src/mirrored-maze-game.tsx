@@ -21,7 +21,7 @@ const MirroredMazeGame = () => {
   ]);
   const gameAreaRef = useRef(null);
   const pathRef = useRef(null);
-  const jitterAmount = 0; // Adjust this value to control jitter intensity
+  const jitterAmount = 3; // Adjust this value to control jitter intensity
 
   // Game configuration 
   const config = {
@@ -31,7 +31,7 @@ const MirroredMazeGame = () => {
     startY: 20,
     endX: 380,
     endY: 380,
-    pathWidth: 50
+    pathWidth: 30
   };
 
   // Calculate distance between two points
