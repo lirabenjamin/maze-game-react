@@ -237,6 +237,11 @@ const MirroredMazeGame = () => {
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
+      {!isGameStarted && (
+        <div className="mb-4 text-lg text-blue-700 font-semibold">
+          Move your mouse to the red dot to begin.
+        </div>
+      )}
       <h1 className="text-2xl font-bold mb-4">Mirrored Maze Game</h1>
       
       <div 
