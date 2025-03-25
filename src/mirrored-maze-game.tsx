@@ -23,7 +23,7 @@ const MirroredMazeGame = () => {
   const pathRef = useRef(null);
   const jitterAmount = 0; // Adjust this value to control jitter intensity
 
-  // Game configuration
+  // Game configuration 
   const config = {
     width: 400,
     height: 400,
