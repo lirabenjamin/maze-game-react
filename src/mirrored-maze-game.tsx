@@ -248,13 +248,13 @@ const MirroredMazeGame = () => {
   };
 
   useEffect(() => {
-    if (isGameCompleted) {
+    if (isGameStarted) {
       console.log("Session Data:");
       console.log("Successes:", successes);
       console.log("Durations:", durations);
       console.log("Scores:", scores);
     }
-    if (isGameCompleted) {
+    if (isGameStarted) {
       const sessionData = {
         successes,
         durations,
@@ -269,7 +269,7 @@ const MirroredMazeGame = () => {
         "*"
       );
     }
-  }, [isGameCompleted]);
+  }, [isGameStarted]);
 
   return (
     <div className="flex flex-col items-center justify-center p-4" style={{ paddingTop: '3rem' }}>
