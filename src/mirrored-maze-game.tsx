@@ -25,11 +25,17 @@ const MirroredMazeGame = () => {
     { x: 380, y: 380 }
   ]);
   const [showStartFlash, setShowStartFlash] = useState(false);
+  const [showWinScreen, setShowWinScreen] = useState(false);
   const [showLossScreen, setShowLossScreen] = useState(false);
   const [movementStartTime, setMovementStartTime] = useState<number | null>(null);
   const gameAreaRef = useRef(null);
   const pathRef = useRef(null);
   const jitterAmount = queryJitter ? parseFloat(queryJitter) : 3;
+
+  // New state variables
+  const [successes, setSuccesses] = useState<number[]>([]);
+  const [durations, setDurations] = useState<number[]>([]);
+  const [scores, setScores] = useState<number[]>([]);
 
   // Game configuration 
   const config = {
@@ -48,7 +54,13 @@ const MirroredMazeGame = () => {
   };
 
   // Reset game
-  const resetGame = () => {
+  const resetGame = (failed = false) => {
+    if (failed) {
+      const duration = movementStartTime ? Math.floor((Date.now() - movementStartTime) / 1000) : 0;
+      setSuccesses(prev => [...prev, 0]);
+      setDurations(prev => [...prev, duration]);
+      setScores(prev => [...prev, 0]);
+    }
     setMovementStartTime(null);
     setShowLossScreen(true);
     setTimeout(() => setShowLossScreen(false), 500);
@@ -143,7 +155,7 @@ const MirroredMazeGame = () => {
     if (!isPointOnPath(jitteredX, jitteredY)) {
       const now = Date.now();
       if (movementStartTime && now - movementStartTime > 750) {
-        resetGame();
+        resetGame(true);
       } else {
         // Silent reset without showing loss screen
         setMousePosition({ x: config.startX, y: config.startY });
@@ -170,7 +182,14 @@ const MirroredMazeGame = () => {
       Math.abs(jitteredX - config.endX) < 20 && 
       Math.abs(jitteredY - config.endY) < 20
     ) {
+      const duration = movementStartTime ? Math.floor((Date.now() - movementStartTime) / 1000) : 0;
+      setSuccesses(prev => [...prev, 1]);
+      setDurations(prev => [...prev, duration]);
+      setScores(prev => [...prev, timeLeft + points]);
+
       setIsGameCompleted(true);
+      setShowWinScreen(true);
+      setTimeout(() => setShowWinScreen(false), 1000);
       setTotalPoints(prev => prev + timeLeft + points);
       setPoints(0);
       setPathPoints([
@@ -227,6 +246,30 @@ const MirroredMazeGame = () => {
     );
   };
 
+  useEffect(() => {
+    if (isGameOver) {
+      console.log("Session Data:");
+      console.log("Successes:", successes);
+      console.log("Durations:", durations);
+      console.log("Scores:", scores);
+    }
+    if (isGameOver) {
+      const sessionData = {
+        successes,
+        durations,
+        scores
+      };
+    
+      window.parent.postMessage(
+        {
+          type: "mazeGameData",
+          data: sessionData
+        },
+        "*"
+      );
+    }
+  }, [isGameOver]);
+
   return (
     <div className="flex flex-col items-center justify-center p-4" style={{ paddingTop: '3rem' }}>
       <div style={{
@@ -250,7 +293,27 @@ const MirroredMazeGame = () => {
         <div>Points: {points}</div>
         <div>Total Points: {totalPoints}</div>
       </div>
-
+      
+      {showWinScreen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 255, 0, 0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          color: 'white',
+          fontSize: '3rem',
+          fontWeight: 'bold'
+        }}>
+          <p>Congratulations! You won!</p>
+        </div>
+      )}
+      
       {showLossScreen && (
         <div style={{
           position: 'fixed',
