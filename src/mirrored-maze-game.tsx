@@ -2,10 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { CheckCircle2, RefreshCw } from 'lucide-react';
 
 const MirroredMazeGame = () => {
+  const searchParams = new URLSearchParams(window.location.search);
+  const queryMirror = searchParams.get('mirror');
+  const queryJitter = searchParams.get('jitter');
+  const queryShowToggle = searchParams.get('showToggle');
+  const showToggleButton = queryShowToggle !== 'false';
   const [mousePosition, setMousePosition] = useState({ x: 20, y: 20 });
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [isGameCompleted, setIsGameCompleted] = useState(false);
-  const [isMirrored, setIsMirrored] = useState(true);
+  const [isMirrored, setIsMirrored] = useState(queryMirror !== 'false');
   const [timeLeft, setTimeLeft] = useState(60);
   const [points, setPoints] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
@@ -20,9 +25,12 @@ const MirroredMazeGame = () => {
     { x: 380, y: 380 }
   ]);
   const [showStartFlash, setShowStartFlash] = useState(false);
+  const [showLossScreen, setShowLossScreen] = useState(false);
+  const [movementStartTime, setMovementStartTime] = useState<number | null>(null);
+  const [closestDistance, setClosestDistance] = useState<number>(Infinity);
   const gameAreaRef = useRef(null);
   const pathRef = useRef(null);
-  const jitterAmount = 3; // Adjust this value to control jitter intensity
+  const jitterAmount = queryJitter ? parseFloat(queryJitter) : 3;
 
   // Game configuration 
   const config = {
@@ -42,11 +50,15 @@ const MirroredMazeGame = () => {
 
   // Reset game
   const resetGame = () => {
+    setMovementStartTime(null);
+    setShowLossScreen(true);
+    setTimeout(() => setShowLossScreen(false), 500);
     setMousePosition({ x: config.startX, y: config.startY });
     setIsGameStarted(false);
     setIsGameCompleted(false);
     setTimeLeft(60);
     setPoints(0);
+    setClosestDistance(Infinity);
     setIsGameOver(false);
   };
 
@@ -80,6 +92,7 @@ const MirroredMazeGame = () => {
             setIsGameOver(true);
             return 0;
           }
+          setPoints(p => Math.max(0, p - 1));
           return prev - 1;
         });
       }, 1000);
@@ -120,6 +133,7 @@ const MirroredMazeGame = () => {
 
       if (distanceToStart <= config.pathWidth) {
         setIsGameStarted(true);
+        setMovementStartTime(Date.now());
         setMousePosition({ x: jitteredX, y: jitteredY });
         setShowStartFlash(true);
         setTimeout(() => setShowStartFlash(false), 500);
@@ -129,13 +143,30 @@ const MirroredMazeGame = () => {
 
     // Check if point is on the path
     if (!isPointOnPath(jitteredX, jitteredY)) {
-      // Reset if off the path
-      resetGame();
+      const now = Date.now();
+      if (movementStartTime && now - movementStartTime > 750) {
+        resetGame();
+      } else {
+        // Silent reset without showing loss screen
+        setMousePosition({ x: config.startX, y: config.startY });
+        setIsGameStarted(false);
+        setIsGameCompleted(false);
+        setTimeLeft(60);
+        setPoints(0);
+        setClosestDistance(Infinity);
+        setIsGameOver(false);
+      }
       return;
     }
 
     // Update mouse position
     setMousePosition({ x: jitteredX, y: jitteredY });
+    
+    const distanceToEnd = calculateDistance(jitteredX, jitteredY, config.endX, config.endY);
+    const maxDistance = calculateDistance(config.startX, config.startY, config.endX, config.endY);
+    const progressRatio = 1 - Math.min(distanceToEnd / maxDistance, 1);
+    const scaledPoints = Math.floor(progressRatio * 100);
+    setPoints(scaledPoints);
 
     // Check if player reaches the end
     if (
@@ -143,7 +174,9 @@ const MirroredMazeGame = () => {
       Math.abs(jitteredY - config.endY) < 20
     ) {
       setIsGameCompleted(true);
-      setTotalPoints(prev => prev + timeLeft);
+      setTotalPoints(prev => prev + timeLeft + points);
+      setClosestDistance(Infinity);
+      setPoints(0);
       setPathPoints([
         { x: config.startX, y: config.startY },
         ...Array.from({ length: 5 }, () => ({
@@ -199,8 +232,50 @@ const MirroredMazeGame = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4">
-      <h1 className="text-2xl font-bold mb-4">Mirrored Maze Game</h1>
+    <div className="flex flex-col items-center justify-center p-4" style={{ paddingTop: '3rem' }}>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        backgroundColor: '#000',
+        color: '#39ff14',
+        fontSize: '1.25rem',
+        fontWeight: 'bold',
+        padding: '0.75rem 0',
+        fontFamily: 'monospace',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+        zIndex: 1001
+      }}>
+        <div>Time left: {timeLeft}s</div>
+        <div>Points: {points}</div>
+        <div>Total Points: {totalPoints}</div>
+      </div>
+
+      {showLossScreen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(255, 0, 0, 0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          color: 'white',
+          fontSize: '3rem',
+          fontWeight: 'bold'
+        }}>
+          <p>YOU LOSE!</p>
+          <p>TRY AGAIN!</p>
+          
+        </div>
+      )}
       
       <div 
         ref={gameAreaRef}
@@ -238,11 +313,16 @@ const MirroredMazeGame = () => {
                     top: '50%',
                     left: '50%',
                     transform: 'translate(-50%, -50%)',
-                    fontSize: '1rem',
+                    fontSize: '1.25rem',
                     fontWeight: 600,
-                    color: '#1e40af'
+                    color: '#1e40af',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    padding: '1rem 1.5rem',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    textAlign: 'center'
                   }}>
-                    Move your mouse to the red dot to begin.
+                    {isMirrored ? "Move your mouse to the red dot to begin." : "Move your mouse to the green dot to begin."}
                   </div>
                 )}
                 {showStartFlash && (
@@ -253,7 +333,12 @@ const MirroredMazeGame = () => {
                     transform: 'translate(-50%, -50%)',
                     fontSize: '2rem',
                     fontWeight: 'bold',
-                    color: '#16a34a'
+                    color: '#16a34a',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    padding: '1rem 1.5rem',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    textAlign: 'center'
                   }}>
                     Start!
                   </div>
@@ -264,44 +349,35 @@ const MirroredMazeGame = () => {
         </div>
         {renderCursor()}
       </div>
-
-      <div className="mt-4 flex items-center space-x-4">
-        <button 
-          onClick={toggleMirroring} 
-          className="bg-blue-500 text-white px-4 py-2 rounded flex items-center"
-        >
-          <RefreshCw className="mr-2" /> 
-          {isMirrored ? 'Disable' : 'Enable'} Mirroring
-        </button>
-
-        <button 
-          onClick={resetGame} 
-          className="bg-red-500 text-white px-4 py-2 rounded"
-        >
-          Reset Game
-        </button>
+      
+      <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+}}>
+      {showToggleButton && (
+        <div className="mt-4 w-screen flex justify-center">
+          <button 
+            onClick={toggleMirroring} 
+            className="bg-blue-500 text-white px-4 py-2 rounded flex items-center"
+          >
+            <RefreshCw className="mr-2" /> 
+            {isMirrored ? 'Disable' : 'Enable'} Mirroring
+          </button>
+        </div>
+      )}
       </div>
-
+      
       {isGameCompleted && (
         <div className="mt-4 text-green-600 flex items-center">
           <CheckCircle2 className="mr-2" />
           Congratulations! You completed the maze!
         </div>
       )}
-
-      <div className="mt-2">Time left: {timeLeft}s</div>
-      <div className="mt-2">Points: {points}</div>
-      <div className="mt-2">Total Points: {totalPoints}</div>
-
+      
       {isGameOver && !isGameCompleted && (
         <div className="mt-4 text-red-600">Time's up! Try again!</div>
       )}
-
-      <div className="mt-4 text-center">
-        <p>Navigate from the green start point to the red end point.</p>
-        <p>The movement is {isMirrored ? 'mirrored' : 'normal'}!</p>
-        <p>You must start from the green point!</p>
-      </div>
     </div>
   );
 };
