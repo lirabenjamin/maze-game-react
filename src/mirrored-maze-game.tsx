@@ -27,7 +27,6 @@ const MirroredMazeGame = () => {
   const [showStartFlash, setShowStartFlash] = useState(false);
   const [showLossScreen, setShowLossScreen] = useState(false);
   const [movementStartTime, setMovementStartTime] = useState<number | null>(null);
-  const [closestDistance, setClosestDistance] = useState<number>(Infinity);
   const gameAreaRef = useRef(null);
   const pathRef = useRef(null);
   const jitterAmount = queryJitter ? parseFloat(queryJitter) : 3;
@@ -58,7 +57,6 @@ const MirroredMazeGame = () => {
     setIsGameCompleted(false);
     setTimeLeft(60);
     setPoints(0);
-    setClosestDistance(Infinity);
     setIsGameOver(false);
   };
 
@@ -153,7 +151,6 @@ const MirroredMazeGame = () => {
         setIsGameCompleted(false);
         setTimeLeft(60);
         setPoints(0);
-        setClosestDistance(Infinity);
         setIsGameOver(false);
       }
       return;
@@ -175,7 +172,6 @@ const MirroredMazeGame = () => {
     ) {
       setIsGameCompleted(true);
       setTotalPoints(prev => prev + timeLeft + points);
-      setClosestDistance(Infinity);
       setPoints(0);
       setPathPoints([
         { x: config.startX, y: config.startY },
@@ -306,7 +302,7 @@ const MirroredMazeGame = () => {
             <circle cx={config.startX} cy={config.startY} r={15} fill="green" />
             <circle cx={config.endX} cy={config.endY} r={15} fill="red" />
             <foreignObject x="0" y="0" width="400" height="400">
-              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: '100%', height: '100%', position: 'relative' }}>
+            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
                 {!isGameStarted && (
                   <div style={{
                     position: 'absolute',
