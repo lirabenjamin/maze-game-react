@@ -95,6 +95,7 @@ const MirroredMazeGame = () => {
   // Timer logic
   useEffect(() => {
     if (isGameStarted && !isGameCompleted && !isGameOver) {
+      console.log("Successes:", successes);
       const timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -247,13 +248,13 @@ const MirroredMazeGame = () => {
   };
 
   useEffect(() => {
-    if (isGameOver) {
+    if (isGameCompleted) {
       console.log("Session Data:");
       console.log("Successes:", successes);
       console.log("Durations:", durations);
       console.log("Scores:", scores);
     }
-    if (isGameOver) {
+    if (isGameCompleted) {
       const sessionData = {
         successes,
         durations,
@@ -268,7 +269,7 @@ const MirroredMazeGame = () => {
         "*"
       );
     }
-  }, [isGameOver]);
+  }, [isGameCompleted]);
 
   return (
     <div className="flex flex-col items-center justify-center p-4" style={{ paddingTop: '3rem' }}>
